@@ -6,9 +6,10 @@ export default function AboutPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">About This Template</h1>
         <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-          This is a modern Next.js template with TypeScript, Tailwind CSS, and other essential tools pre-configured.
+          This is a modern Next.js template with TypeScript, Tailwind CSS, and other essential tools
+          pre-configured.
         </p>
-        
+
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold mt-6 mb-2">Features</h2>
           <ul className="list-disc pl-6 space-y-2">

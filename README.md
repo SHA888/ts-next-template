@@ -51,6 +51,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3000/api"
 ```
 
 Replace `DATABASE_URL` with your database connection string (e.g., for PostgreSQL or MongoDB).
+
 ### 4. Set Up Prisma
 
 Initialize Prisma and generate the client:
@@ -61,6 +62,7 @@ npx prisma generate
 ```
 
 Update the `schema.prisma` file in the `/prisma` directory to define your database models.
+
 ### 5. Run the Development Server
 
 Using npm:
@@ -76,6 +78,7 @@ yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
+
 ## Project Structure
 
 ```
@@ -298,6 +301,7 @@ export async function GET() {
 ```
 
 3. Update dependencies:
+
 ```bash
 npm uninstall prisma @prisma/client
 npm install mongoose
@@ -314,12 +318,14 @@ npm install mongoose
 #### How to Swap to CSS Modules:
 
 1. Remove Tailwind:
+
 ```bash
 npm uninstall tailwindcss postcss autoprefixer
 rm tailwind.config.js postcss.config.js
 ```
 
 2. Create a CSS module:
+
 ```tsx
 // app/page.tsx
 import styles from './page.module.css';
@@ -335,7 +341,9 @@ export default function Home({ users }: Props) {
       <h1 className={styles.title}>Welcome to TS Next Template</h1>
       <ul>
         {users.map((user) => (
-          <li key={user.id} className={styles.item}>{user.name}</li>
+          <li key={user.id} className={styles.item}>
+            {user.name}
+          </li>
         ))}
       </ul>
     </div>
@@ -345,38 +353,40 @@ export default function Home({ users }: Props) {
 
 ```css
 /* app/page.module.css */
-.container { 
-  margin: 0 auto; 
-  padding: 1rem; 
+.container {
+  margin: 0 auto;
+  padding: 1rem;
 }
-.title { 
-  font-size: 1.5rem; 
-  font-weight: bold; 
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
 }
-.item { 
-  list-style: none; 
+.item {
+  list-style: none;
 }
 ```
 
 #### How to Swap to Styled-Components:
 
 1. Install Styled-Components:
+
 ```bash
 npm install styled-components @types/styled-components
 ```
 
 2. Update your component:
+
 ```tsx
 import styled from 'styled-components';
 import { User } from '@/lib/types';
 
 const Container = styled.div`
-  margin: 0 auto; 
+  margin: 0 auto;
   padding: 1rem;
 `;
 
 const Title = styled.h1`
-  font-size: 1.5rem; 
+  font-size: 1.5rem;
   font-weight: bold;
 `;
 
@@ -407,11 +417,13 @@ export default function Home({ users }: Props) {
 #### How to Swap to Supabase Auth:
 
 1. Install Supabase:
+
 ```bash
 npm install @supabase/supabase-js
 ```
 
 2. Configure Supabase client:
+
 ```typescript
 // lib/supabase.ts
 import { createClient } from '@supabase/supabase-js';
@@ -423,6 +435,7 @@ export const supabase = createClient(
 ```
 
 3. Create an API route for login:
+
 ```typescript
 // app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
@@ -430,11 +443,11 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   const { email, password } = await request.json();
-  const { data, error } = await supabase.auth.signInWithPassword({ 
-    email, 
-    password 
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
-  
+
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json(data);
 }
@@ -451,11 +464,13 @@ export async function POST(request: Request) {
 #### How to Swap to Biome:
 
 1. Install Biome:
+
 ```bash
 npm install --save-dev @biomejs/biome
 ```
 
 2. Create a `biome.json` configuration file:
+
 ```json
 {
   "$schema": "https://biomejs.dev/schemas/1.4.0/schema.json",
@@ -478,6 +493,7 @@ npm install --save-dev @biomejs/biome
 ```
 
 3. Update `package.json` scripts:
+
 ```json
 {
   "scripts": {
@@ -488,6 +504,7 @@ npm install --save-dev @biomejs/biome
 ```
 
 4. (Optional) Remove Prettier:
+
 ```bash
 npm uninstall prettier
 rm .prettierrc
@@ -515,11 +532,13 @@ rm .prettierrc
 ### How to Swap to simple-git-hooks:
 
 1. Install simple-git-hooks:
+
 ```bash
 npm install --save-dev simple-git-hooks
 ```
 
 2. Configure in `package.json`:
+
 ```json
 {
   "simple-git-hooks": {
@@ -529,11 +548,13 @@ npm install --save-dev simple-git-hooks
 ```
 
 3. Set up the hooks:
+
 ```bash
 npx simple-git-hooks
 ```
 
 4. (Optional) Remove Husky and lint-staged:
+
 ```bash
 npm uninstall husky lint-staged
 ```
@@ -545,12 +566,14 @@ npm uninstall husky lint-staged
 ### How to Swap to NestJS:
 
 1. Create a new NestJS project:
+
 ```bash
 npx @nestjs/cli new backend
 cd backend
 ```
 
 2. Create a users controller:
+
 ```typescript
 // backend/src/users/users.controller.ts
 import { Controller, Get } from '@nestjs/common';

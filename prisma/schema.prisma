@@ -1,0 +1,254 @@
+// This is your Prisma schema file
+// PostgreSQL is the primary database
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["filteredRelationCount", "multiSchema"]
+  binaryTargets   = ["native", "debian-openssl-1.1.x"]
+}
+
+// Uncomment the database you want to use and comment out the other one
+
+// PostgreSQL Configuration (default)
+// Primary PostgreSQL database
+datasource postgresql {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// MongoDB Configuration (uncomment to use MongoDB instead)
+// datasource db {
+//   provider = "mongodb"
+//   url      = env("MONGODB_URI")
+// }
+
+// Common fields for all models
+model BaseModel {
+  id        String   @id @default(cuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  @@map("base_model")
+  @@ignore
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  EDITOR
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// User model for authentication
+model User {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  password      String?   @postgresql.VarChar(255) // Explicit length for hashed passwords
+  role          UserRole  @default(USER)
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  media         Media[]
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  posts         Post[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  // Indexes
+  @@index([email], name: "user_email_idx")
+  @@index([role], name: "user_role_idx")
+  @@index([isActive], name: "user_active_idx")
+  
+  // Database specific settings
+  @@map("users")
+}
+
+// Account model for OAuth connections
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @postgresql.Text
+  access_token      String? @postgresql.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token         String? @postgresql.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// Session model for user sessions
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+// Verification token model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Post model for blog/content
+model Post {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  excerpt     String?    @postgresql.Text
+  content     String?    @postgresql.Text
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
+  featured    Boolean    @default(false)
+  author      User       @relation(fields: [authorId], references: [id])
+  authorId    String
+  categories  Category[] @relation("PostCategories")
+  tags        Tag[]      @relation("PostTags")
+  media       Media[]
+  comments    Comment[]
+  viewCount   Int        @default(0)
+  seoTitle    String?
+  seoDesc     String?    @map("seo_description") @postgresql.Text
+  seoKeywords String[]
+  
+  @@map("posts")
+}
+
+// Category model for post categorization
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @postgresql.Text
+  postCount   Int      @default(0) @map("post_count")
+  posts       Post[]   @relation("PostCategories")
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  
+  @@map("categories")
+}
+
+// Tag model for post tagging
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @postgresql.Text
+  postCount   Int      @default(0) @map("post_count")
+  posts       Post[]   @relation("PostTags")
+  
+  @@map("tags")
+}
+
+// Media model for handling uploads
+model Media {
+  id          String   @id @default(cuid())
+  url         String
+  type        MediaType
+  name        String
+  size        Int
+  width       Int?
+  height      Int?
+  altText     String?
+  description String?   @postgresql.Text
+  post        Post?     @relation(fields: [postId], references: [id])
+  postId      String?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  
+  @@map("media")
+}
+
+// Comment model for post comments
+model Comment {
+  id        String        @id @default(cuid())
+  content   String        @postgresql.Text
+  status    CommentStatus @default(PENDING)
+  author    User?         @relation(fields: [authorId], references: [id])
+  authorId  String?
+  post      Post          @relation(fields: [postId], references: [id])
+  postId    String
+  parentId  String?
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentReplies")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  
+  @@map("comments")
+}
+
+// Settings model for site configuration
+model Setting {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  value      String   @postgresql.Text
+  type       String   // string, number, boolean, json
+  group      String?
+  label      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+// Audit log for tracking changes
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  oldData     Json?
+  newData     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@map("audit_logs")
+}

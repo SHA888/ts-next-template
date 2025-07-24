@@ -1,0 +1,233 @@
+<context>
+# Overview  
+TS Next Template is a modern, full-stack web application template designed to accelerate development of scalable and maintainable web applications. It solves the problem of time-consuming project setup by providing a production-ready foundation with best practices, type safety, and modern tooling out of the box. This template is valuable for developers and teams looking to quickly bootstrap new projects with Next.js and TypeScript while maintaining flexibility for customization.
+
+# Core Features  
+
+## 1. Next.js 14+ with App Router
+- **What it does**: Provides file-based routing, server-side rendering (SSR), static site generation (SSG), and API routes.
+- **Why it's important**: Enables building fast, SEO-friendly applications with optimal performance.
+- **How it works**: Uses the App Router for better performance and developer experience, with support for React Server Components.
+
+## 2. TypeScript Integration
+- **What it does**: Enforces type safety across the entire codebase.
+- **Why it's important**: Reduces runtime errors and improves developer experience with better IDE support.
+- **How it works**: TypeScript is configured with strict mode enabled, with shared types between frontend and backend.
+
+## 3. Prisma ORM
+- **What it does**: Provides type-safe database access.
+- **Why it's important**: Ensures database operations are type-safe and reduces runtime errors.
+- **How it works**: Uses Prisma Client for type-safe database queries with support for multiple databases.
+
+## 4. Tailwind CSS
+- **What it does**: Utility-first CSS framework for rapid UI development.
+- **Why it's important**: Enables consistent, responsive design without leaving your JSX/TSX.
+- **How it works**: Pre-configured with sensible defaults and easy customization through tailwind.config.js.
+
+## 5. Developer Experience Tools
+- **What it does**: Includes ESLint, Prettier, Husky, and lint-staged.
+- **Why it's important**: Enforces code quality and consistent formatting across the project.
+- **How it works**: Automatic linting and formatting on commit, with pre-configured rules.
+
+# User Experience  
+
+## User Personas
+1. **Frontend Developers**
+   - Need a solid starting point with modern tooling
+   - Value type safety and good developer experience
+   - Want flexibility to customize the stack
+
+2. **Full-stack Developers**
+   - Need integrated frontend and backend solutions
+   - Appreciate type safety across the stack
+   - Want to minimize boilerplate code
+
+3. **Project Leads**
+   - Need maintainable, well-documented code
+   - Value established best practices
+   - Want quick onboarding for new team members
+
+## Key User Flows
+1. **Project Setup**
+   - Clone repository
+   - Install dependencies
+   - Configure environment variables
+   - Start development server
+
+2. **Development Workflow**
+   - Make code changes
+   - Automatic linting and formatting
+   - Run tests
+   - Commit changes with pre-commit hooks
+
+3. **Deployment**
+   - Configure production environment
+   - Build for production
+   - Deploy to chosen platform (Vercel, AWS, etc.)
+
+## UI/UX Considerations
+- **Responsive Design**: Works on all device sizes out of the box
+- **Performance**: Optimized for fast loading with code splitting
+- **Accessibility**: Follows WCAG guidelines for better accessibility
+- **Theming**: Easy theming support through Tailwind CSS
+</context>
+<PRD>
+# Technical Architecture  
+
+## System Components
+1. **Frontend**
+   - Next.js 14+ with App Router
+   - React 18+ with Server Components
+   - TypeScript for type safety
+   - Tailwind CSS for styling
+
+2. **Backend**
+   - Next.js API Routes
+   - Prisma ORM for database access
+   - Type-safe API layer
+
+3. **Database**
+   - Supports multiple databases via Prisma
+   - PostgreSQL recommended for production
+   - MongoDB supported for document storage
+
+## Data Models
+- **Base Model**: Common fields (id, createdAt, updatedAt)
+- **User Model**: Authentication and profile data
+- **Example Models**: Extendable for specific use cases
+
+## APIs and Integrations
+- **RESTful API**: Built with Next.js API Routes
+- **Type-safe API Client**: Auto-generated from API routes
+- **Third-party Integrations**:
+  - Authentication providers (NextAuth.js)
+  - File storage (AWS S3, Cloudinary)
+  - Email services (SendGrid, Resend)
+
+## Infrastructure Requirements
+- **Development**: Node.js 18+, npm/yarn
+- **Production**:
+  - Vercel (recommended)
+  - Node.js server (AWS, Render, etc.)
+  - Database (PostgreSQL, MongoDB, etc.)
+  - Object storage (if needed)
+
+# Development Roadmap  
+
+## Phase 1: Core Setup (MVP)
+1. **Project Initialization**
+   - Set up Next.js with TypeScript
+   - Configure ESLint, Prettier, and Husky
+   - Add Tailwind CSS and basic styling
+
+2. **Database Layer**
+   - Set up Prisma with example models
+   - Create database migration scripts
+   - Implement base repository pattern
+
+3. **Authentication**
+   - Implement NextAuth.js
+   - Set up email/password and OAuth providers
+   - Create protected routes
+
+## Phase 2: Developer Experience
+1. **API Layer**
+   - Create type-safe API utilities
+   - Implement error handling middleware
+   - Add request validation
+
+2. **Testing**
+   - Set up Jest and React Testing Library
+   - Add unit and integration tests
+   - Configure test coverage reporting
+
+3. **Documentation**
+   - Complete README with setup instructions
+   - Add API documentation
+   - Create contribution guidelines
+
+## Phase 3: Production Readiness
+1. **Performance Optimization**
+   - Implement code splitting
+   - Add image optimization
+   - Set up caching strategies
+
+2. **Monitoring and Logging**
+   - Add error tracking (Sentry, LogRocket)
+   - Implement logging middleware
+   - Set up performance monitoring
+
+3. **Deployment**
+   - Create deployment scripts
+   - Set up CI/CD pipeline
+   - Configure environment management
+
+# Logical Dependency Chain
+1. **Foundation**
+   - Next.js setup
+   - TypeScript configuration
+   - Basic folder structure
+
+2. **Core Functionality**
+   - Database setup with Prisma
+   - Authentication system
+   - Basic CRUD operations
+
+3. **Enhanced Features**
+   - Advanced data fetching
+   - Form handling
+   - State management (if needed)
+
+4. **Polish**
+   - Testing
+   - Documentation
+   - Performance optimization
+
+# Risks and Mitigations  
+
+## Technical Challenges
+1. **Database Schema Changes**
+   - **Risk**: Schema changes can be difficult to manage
+   - **Mitigation**: Use Prisma migrations and maintain migration history
+
+2. **Performance Optimization**
+   - **Risk**: Poor performance with complex queries
+   - **Mitigation**: Implement proper indexing and query optimization
+
+## MVP Scope
+- **Risk**: Feature creep can delay initial release
+- **Mitigation**: Define clear MVP scope and stick to essential features
+
+## Resource Constraints
+- **Risk**: Limited development resources
+- **Mitigation**: Prioritize features based on impact and effort
+
+# Appendix  
+
+## Technical Specifications
+- **Frontend**: React 18+, Next.js 14+, TypeScript 5+
+- **Styling**: Tailwind CSS 3+
+- **Database**: PostgreSQL/MongoDB via Prisma
+- **Authentication**: NextAuth.js
+- **Linting/Formatting**: ESLint, Prettier
+- **Git Hooks**: Husky, lint-staged
+
+## Development Workflow
+1. Clone repository
+2. Install dependencies
+3. Set up environment variables
+4. Run development server
+5. Make changes following Git flow
+6. Run tests before committing
+7. Create pull requests for review
+
+## Deployment Options
+1. **Vercel** (Recommended)
+   - Automatic deployments from Git
+   - Edge Functions support
+   - Built-in CI/CD
+
+2. **Self-hosted**
+   - Docker container
+   - PM2/Node.js process manager
+   - Load balancing for production

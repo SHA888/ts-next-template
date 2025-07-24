@@ -10,6 +10,8 @@ This is a reusable template for building a full-stack web application using Next
 - **Tailwind CSS**: Enables rapid, responsive UI development with utility-first styling.
 - **ESLint & Prettier**: Enforces code quality and consistent formatting.
 - **Husky & lint-staged**: Automates linting and formatting on commits.
+- **Style Guide**: Comprehensive design system with color palette, typography, and component guidelines.
+- **Optimized Builds**: Production-optimized CSS with PurgeCSS for minimal bundle size.
 
 ## Prerequisites
 

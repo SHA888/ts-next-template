@@ -1,0 +1,118 @@
+# Browsers that we support
+
+# Modern browsers with > 0.5% market share and not dead
+> 0.5%
+not dead
+
+# Last 2 versions of major browsers
+last 2 versions
+
+# Firefox ESR
+firefox esr
+
+# Not IE 11
+not IE 11
+
+# Specific versions
+and_chr 122
+and_ff 123
+and_uc 15.5
+android 122
+chrome 123
+chrome 122
+chrome 121
+edge 123
+edge 122
+firefox 124
+firefox 123
+ios_saf 17.4
+ios_saf 17.3
+ios_saf 17.2
+ios_saf 17.1
+ios_saf 17.0
+ios_saf 16.6
+ios_saf 16.5
+ios_saf 16.4
+ios_saf 16.3
+ios_saf 16.2
+ios_saf 16.1
+ios_saf 16.0
+ios_saf 15.6-15.7
+ios_saf 15.5
+ios_saf 15.4
+ios_saf 15.2-15.3
+ios_saf 15.0-15.1
+ios_saf 14.5-14.8
+ios_saf 14.0-14.4
+ios_saf 12.2-12.5
+kaios 2.5
+op_mini all
+op_mob 73
+opera 109
+opera 108
+safari 17.4
+safari 17.3
+safari 17.2
+safari 17.1
+safari 17.0
+safari 16.6
+safari 16.5
+safari 16.4
+safari 16.3
+safari 16.2
+safari 16.1
+safari 16.0
+safari 15.6
+safari 15.5
+safari 15.4
+safari 15.2-15.3
+safari 15.1
+safari 15.0
+safari 14.1
+safari 14
+safari 13.1
+samsung 24.0
+samsung 23.0
+samsung 22.0
+samsung 21.0
+samsung 20.0
+samsung 19.0
+samsung 18.0
+samsung 17.0
+samsung 16.0
+samsung 15.0
+samsung 14.0
+samsung 13.0
+samsung 12.0
+samsung 11.1-11.2
+samsung 10.1
+samsung 9.2
+samsung 8.2
+samsung 7.2-7.4
+samsung 6.2-6.4
+samsung 5.0-5.6
+samsung 4.0
+
+# Development environment (used with NODE_ENV=development)
+[development]
+last 1 chrome version
+last 1 firefox version
+last 1 safari version
+
+# Production environment (used with NODE_ENV=production)
+[production]
+> 0.5%
+not dead
+not op_mini all
+
+# Legacy browsers (if needed)
+[legacy]
+> 0.5%
+last 2 versions
+Firefox ESR
+not dead
+IE 11
+
+# Test environment (used with NODE_ENV=test)
+[test]
+current node

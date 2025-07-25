@@ -1,333 +1,282 @@
-import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { BaseRepository } from './base-repository';
+import type { PrismaClient } from '@prisma/client';
 
-// Extend the PrismaClient type to include the transaction client
-type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'> & {
-  post: any; // Add type for post model access
-};
+type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
+declare module '@prisma/client' {
+  interface PrismaClient {
+    $transaction<T>(fn: (prisma: TransactionClient) => Promise<T>): Promise<T>;
+  }
+}
 
-
-// Define types based on the Prisma client
-type Post = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  content: string | null;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  publishedAt: Date | null;
-  featured: boolean;
-  authorId: string;
-  viewCount: number;
-  seoTitle: string | null;
-  seoDesc: string | null;
-  seoKeywords: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-  author: {
-    id: string;
-    name: string | null;
-    email: string | null;
-    image: string | null;
+type Post = Prisma.PostGetPayload<{
+  include: {
+    author: true;
+    categories: true;
+    tags: true;
+    media: true;
+    _count: { select: { comments: true } };
   };
-  categories: Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>;
-  tags: Array<{
-    id: string;
-    name: string;
-    slug: string;
-  }>;
-  media: Array<{
-    id: string;
-    url: string;
-    type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-    name: string;
-    size: number;
-    width: number | null;
-    height: number | null;
-    altText: string | null;
-  }>;
-  _count?: {
-    comments: number;
-  };
-};
+}>;
 
-type PostCreateInput = {
-  title: string;
-  slug: string;
-  excerpt?: string | null;
-  content?: string | null;
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  publishedAt?: Date | null;
-  featured?: boolean;
-  authorId: string;
-  categoryIds?: string[];
-  tagIds?: string[];
-  seoTitle?: string | null;
-  seoDesc?: string | null;
-  seoKeywords?: string[];
-};
+export class PostRepository extends BaseRepository<'Post'> {
+  protected get modelName() {
+    return 'Post' as const;
+  }
 
-type PostUpdateInput = Partial<Omit<PostCreateInput, 'authorId'>> & {
-  categoryIds?: string[];
-  tagIds?: string[];
-};
-
-type PostWhereUniqueInput = {
-  id?: string;
-  slug?: string;
-};
-
-type PostWhereInput = {
-  id?: string | { in: string[] };
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  authorId?: string;
-  categoryId?: string;
-  tagId?: string;
-  search?: string;
-  deletedAt?: Date | null;
-  AND?: PostWhereInput[];
-  OR?: PostWhereInput[];
-  NOT?: PostWhereInput | PostWhereInput[];
-  [key: string]: unknown; // Allow additional properties
-};
-
-type PostOrderByInput = {
-  createdAt?: 'asc' | 'desc';
-  updatedAt?: 'asc' | 'desc';
-  publishedAt?: 'asc' | 'desc';
-  title?: 'asc' | 'desc';
-  viewCount?: 'asc' | 'desc';
-};
-
-export class PostRepository extends BaseRepository<
-  Post,
-  PostCreateInput,
-  PostUpdateInput,
-  PostWhereUniqueInput,
-  PostWhereInput,
-  PostOrderByInput
-> {
+  // Use the prisma property from BaseRepository
+  // No need to override it here
   constructor(prisma: PrismaClient) {
     super(prisma);
   }
 
-  protected getModelName(): string {
-    return 'post';
-  }
+  async create<T = Post>(data: unknown): Promise<T> {
+    const postData = data as Prisma.PostCreateInput;
+    const prisma = this.prisma;
 
-  async create(data: PostCreateInput, transaction?: TransactionClient): Promise<Post> {
-    const prisma = transaction || this.prisma;
-    const { categoryIds = [], tagIds = [], ...postData } = data;
-
-    return prisma.post.create({
-      data: {
-        ...postData,
-        categories: categoryIds.length > 0 ? {
-          connect: categoryIds.map(id => ({ id }))
-        } : undefined,
-        tags: tagIds.length > 0 ? {
-          connect: tagIds.map(id => ({ id }))
-        } : undefined
-      },
-      include: this.getDefaultInclude()
+    const result = await prisma.post.create({
+      data: postData,
+      include: this.getDefaultInclude(),
     });
+
+    return result as unknown as T;
   }
 
-  private getDefaultInclude() {
+  private getDefaultInclude(): Prisma.PostInclude {
     return {
-      author: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
+      author: true,
       categories: true,
       tags: true,
       media: true,
-      _count: {
-        select: {
-          comments: true,
-        },
-      },
+      _count: { select: { comments: true } },
     };
   }
 
-  async findMany(args: {
-    where?: PostWhereInput;
-    skip?: number;
-    take?: number;
-    orderBy?: PostOrderByInput | PostOrderByInput[];
-    include?: any;
-    transaction?: TransactionClient;
-  } = {}): Promise<Post[]> {
-    const prisma = args?.transaction || this.prisma;
-    const { where, include, ...otherArgs } = args;
-    
-    return prisma.post.findMany({
-      ...otherArgs,
+  async findMany<T = Post[]>(args: unknown): Promise<T> {
+    const {
+      where,
+      orderBy,
+      skip,
+      take,
+      include = {},
+      transaction,
+    } = args as {
+      where?: Prisma.PostWhereInput;
+      orderBy?: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
+      skip?: number;
+      take?: number;
+      include?: Prisma.PostInclude;
+      transaction?: TransactionClient;
+    };
+    const prisma = transaction || this.prisma;
+
+    const results = await prisma.post.findMany({
       where: this.buildWhereClause(where),
       include: {
-        ...this.getDefaultInclude(),
+        author: true,
+        categories: true,
+        tags: true,
+        media: true,
+        _count: { select: { comments: true } },
         ...include,
       },
+      orderBy,
+      skip,
+      take,
     });
+
+    return results as unknown as T;
   }
 
-  private buildWhereClause(where?: PostWhereInput): Record<string, unknown> | undefined {
+  private buildWhereClause(where?: Prisma.PostWhereInput): Prisma.PostWhereInput | undefined {
     if (!where) return undefined;
 
-    const { status, categoryId, tagId, search, ...restWhere } = where;
-    const conditions: Record<string, unknown>[] = [];
-    
+    // Type-safe destructuring with type assertion
+    const whereInput = where as Prisma.PostWhereInput & {
+      categoryId?: string;
+      tagId?: string;
+      search?: string;
+    };
+
+    const { status, categoryId, tagId, search, ...restWhere } = whereInput;
+    const conditions: Prisma.PostWhereInput[] = [];
+
     if (status) conditions.push({ status });
     if (categoryId) conditions.push({ categories: { some: { id: categoryId } } });
     if (tagId) conditions.push({ tags: { some: { id: tagId } } });
     if (search) {
       conditions.push({
         OR: [
-          { title: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' as const } },
           { excerpt: { contains: search, mode: 'insensitive' } },
           { content: { contains: search, mode: 'insensitive' } },
         ],
       });
     }
-    
-    const result: Record<string, unknown> = { ...restWhere };
-    if (conditions.length > 0) {
-      result['AND'] = conditions;
+
+    if (conditions.length === 0) {
+      return restWhere;
     }
-    
-    return result;
+
+    return {
+      ...restWhere,
+      AND: conditions,
+    };
   }
 
-  async findUnique(
-    where: PostWhereUniqueInput, 
-    options: {
-      include?: any;
+  async findUnique<T = Post>(args: unknown): Promise<T | null> {
+    const {
+      where,
+      include = {},
+      transaction,
+    } = args as {
+      where: Prisma.PostWhereUniqueInput;
+      include?: Prisma.PostInclude;
       transaction?: TransactionClient;
-    } = {}
-  ): Promise<Post | null> {
-    const prisma = options.transaction || this.prisma;
+    };
+    const prisma = transaction || this.prisma;
     return prisma.post.findUnique({
       where,
       include: {
-        ...this.getDefaultInclude(),
-        ...options.include,
+        author: true,
+        categories: true,
+        tags: true,
+        media: true,
+        _count: { select: { comments: true } },
+        ...include,
       },
-    });
+    }) as unknown as T | null;
   }
 
-  async update(params: {
-    where: PostWhereUniqueInput;
-    data: PostUpdateInput;
-    include?: any;
-    transaction?: TransactionClient;
-  }): Promise<Post> {
-    const { where, data, include, transaction } = params;
+  async update<T = Post>(args: unknown): Promise<T> {
+    const {
+      where,
+      data,
+      include = {},
+      transaction,
+    } = args as {
+      where: Prisma.PostWhereUniqueInput;
+      data: Prisma.PostUpdateInput;
+      include?: Prisma.PostInclude;
+      transaction?: TransactionClient;
+    };
+
     const prisma = transaction || this.prisma;
-    const { categoryIds, tagIds, ...updateData } = data;
 
-    return (prisma as any).$transaction(async (txClient: any) => {
-      const tx: TransactionClient = txClient;
-      // Update post data
-      const post = await txClient.post.update({
+    // Use type assertion to access $transaction on PrismaClient
+    const result = await (prisma as unknown as PrismaClient).$transaction(async (tx) => {
+      // First update the post
+      const post = await tx.post.update({
         where,
-        data: updateData,
-        include: include || this.getDefaultInclude(),
+        data,
       });
-
-// Update categories if provided
-      if (categoryIds) {
-        await txClient.post.update({
-          where: { id: post.id },
-          data: {
-            categories: {
-              set: categoryIds.map((id: string) => ({ id })),
-            },
-          },
-        });
-      }
-
-// Update tags if provided
-      if (tagIds) {
-        await txClient.post.update({
-          where: { id: post.id },
-          data: {
-            tags: {
-              set: tagIds.map((id: string) => ({ id })),
-            },
-          },
-        });
-      }
 
       // Return the updated post with all relations
-      return this.findUnique({ id: post.id }, { 
-        include: include || this.getDefaultInclude(),
-        transaction: tx 
+      return tx.post.findUnique({
+        where: { id: post.id },
+        include: {
+          author: true,
+          categories: true,
+          tags: true,
+          media: true,
+          _count: { select: { comments: true } },
+          ...include,
+        } as const, // Use const assertion for better type inference
       });
     });
+
+    return result as unknown as T;
   }
 
-  async updatePublishStatus(postId: string, status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED', transaction?: TransactionClient): Promise<void> {
-    const prisma = transaction || this.prisma;
+  async updatePublishStatus(
+    postId: string,
+    status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+    transaction?: TransactionClient
+  ): Promise<void> {
+    const prisma = transaction || (this as unknown as { prisma: PrismaClient }).prisma;
     await prisma.post.update({
       where: { id: postId },
-      data: { 
+      data: {
         status,
         publishedAt: status === 'PUBLISHED' ? new Date() : null,
       },
     });
   }
 
-  async delete(where: PostWhereUniqueInput, transaction?: TransactionClient): Promise<Post> {
+  async delete<T = Post>(args: unknown): Promise<T> {
+    const { where, transaction } = args as {
+      where: Prisma.PostWhereUniqueInput;
+      transaction?: TransactionClient;
+    };
     const prisma = transaction || this.prisma;
-    return prisma.post.update({
+    return prisma.post.delete({
       where,
-      data: { deletedAt: new Date() },
-      include: this.getDefaultInclude(),
-    });
+    }) as unknown as Promise<T>;
   }
 
-  async count(where?: PostWhereInput): Promise<number> {
+  async count(args?: unknown): Promise<number> {
+    const { where } = (args || {}) as { where?: Prisma.PostWhereInput };
     return this.prisma.post.count({ where });
   }
 
   async withTransaction<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (txClient: any) => {
-      const tx = txClient as TransactionClient;
-      return fn(tx);
+    return this.prisma.$transaction(async (tx) => {
+      return fn(tx as TransactionClient);
     });
   }
 
-  async incrementViewCount(slug: string, transaction?: TransactionClient): Promise<Post> {
-    const prisma = transaction || this.prisma;
-    const result = await prisma.post.update({
-      where: { slug },
-      data: {
-        viewCount: {
-          increment: 1,
+  async incrementViewCount(postId: string, incrementBy = 1): Promise<Post> {
+    // Use a transaction to ensure atomicity
+    return this.withTransaction(async (tx) => {
+      // First update the view count
+      await (
+        tx as unknown as {
+          $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+        }
+      ).$executeRaw`
+        UPDATE "Post" 
+        SET "viewCount" = COALESCE("viewCount", 0) + ${incrementBy}
+        WHERE "id" = ${postId}
+      `;
+
+      // Then fetch the updated post with all its relations
+      const txClient = tx as unknown as {
+        post: {
+          findUnique: (args: {
+            where: { id: string };
+            include: Prisma.PostInclude;
+          }) => Promise<Post | null>;
+        };
+      };
+
+      const updatedPost = await txClient.post.findUnique({
+        where: { id: postId },
+        include: this.getDefaultInclude(),
+      });
+
+      if (!updatedPost) {
+        throw new Error(`Post with ID ${postId} not found`);
+      }
+
+      // Map the result to our Post type with proper null checks
+      return {
+        ...updatedPost,
+        author: updatedPost.author || {
+          id: updatedPost.authorId,
+          name: null,
+          email: null,
+          image: null,
         },
-      },
-      include: this.getDefaultInclude(),
+        categories: updatedPost.categories || [],
+        tags: updatedPost.tags || [],
+        media: updatedPost.media || [],
+        _count: updatedPost._count || { comments: 0 },
+      } as Post;
     });
-    
-    // Map the result to our Post type
-    return {
-      ...result,
-      author: result.author || { id: result.authorId, name: null, email: null, image: null },
-      categories: result.categories || [],
-      tags: result.tags || [],
-      media: result.media || [],
-      _count: result._count || { comments: 0 },
-    };
   }
 
   // Custom methods specific to Post model
@@ -338,10 +287,10 @@ export class PostRepository extends BaseRepository<
   }: {
     skip?: number;
     take?: number;
-    orderBy?: PostOrderByInput | PostOrderByInput[];
+    orderBy?: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
   }): Promise<Post[]> {
     return this.findMany({
-      where: { 
+      where: {
         status: 'PUBLISHED',
         deletedAt: null,
       },
@@ -365,7 +314,7 @@ export class PostRepository extends BaseRepository<
   async publishPost(id: string): Promise<Post> {
     return this.update({
       where: { id },
-      data: { 
+      data: {
         status: 'PUBLISHED',
         publishedAt: new Date(),
       },

@@ -2,9 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2020",
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["es2020"],
     "outDir": "./.ts-node",
     "rootDir": ".",
     "allowJs": true,
@@ -15,8 +16,21 @@
     "emitDeclarationOnly": true,
     "declaration": true,
     "declarationMap": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
   },
-  "include": ["next.config.*", "postcss.config.*", "tailwind.config.*", "*.config.js", "*.config.ts"],
+  "include": [
+    "next-env.d.ts",
+    "next.config.*",
+    "postcss.config.*",
+    "tailwind.config.*",
+    "**/*.ts",
+    "**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "lib/repositories/**/*.ts"
+  ],
   "exclude": ["node_modules", ".next", "out"]
 }

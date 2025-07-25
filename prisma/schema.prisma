@@ -1,27 +1,28 @@
-// This is your Prisma schema file
-// PostgreSQL is the primary database
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["filteredRelationCount", "multiSchema"]
-  binaryTargets   = ["native", "debian-openssl-1.1.x"]
+  provider = "prisma-client-js"
+  previewFeatures = ["filteredRelationCount"]
 }
 
-// Uncomment the database you want to use and comment out the other one
-
-// PostgreSQL Configuration (default)
-// Primary PostgreSQL database
+// PostgreSQL database (primary)
 datasource postgresql {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// MongoDB database (for specific use cases like logs)
+datasource mongodb {
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
+}
 
-// MongoDB Configuration (uncomment to use MongoDB instead)
-// datasource db {
-//   provider = "mongodb"
-//   url      = env("MONGODB_URI")
-// }
+// PostgreSQL Configuration
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 // Common fields for all models
 model BaseModel {
@@ -32,6 +33,27 @@ model BaseModel {
   
   @@map("base_model")
   @@ignore
+}
+
+// User Activity Log
+// MongoDB model for user activity logs
+model UserActivityLog {
+  id        String   @id @default(auto()) @map("_id") @mongodb.ObjectId
+  userId    String   @map("user_id")
+  action    String
+  metadata  Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp
+
+  @@map("user_activity_logs")
+  @@index([userId], name: "user_activity_log_user_id_idx")
+  @@index([createdAt], name: "user_activity_log_created_at_idx")
+  @@mongodb.Index(
+    keys: { createdAt: 1 },
+    options: { expireAfterSeconds: 2592000 } // 30 days TTL
+  )
 }
 
 // Enums
@@ -66,7 +88,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime? @map("email_verified")
   image         String?
-  password      String?   @postgresql.VarChar(255) // Explicit length for hashed passwords
+  password      String?   @db.VarChar(255) // Explicit length for hashed passwords
   role          UserRole  @default(USER)
   isActive      Boolean   @default(true) @map("is_active")
   lastLoginAt   DateTime? @map("last_login_at")
@@ -100,12 +122,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @postgresql.Text
-  access_token      String? @postgresql.Text
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token         String? @postgresql.Text
+  id_token         String? @db.Text
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
@@ -139,8 +161,8 @@ model Post {
   id          String     @id @default(cuid())
   title       String
   slug        String     @unique
-  excerpt     String?    @postgresql.Text
-  content     String?    @postgresql.Text
+  excerpt     String?    @db.Text
+  content     String?    @db.Text
   status      PostStatus @default(DRAFT)
   publishedAt DateTime?
   featured    Boolean    @default(false)
@@ -152,7 +174,7 @@ model Post {
   comments    Comment[]
   viewCount   Int        @default(0)
   seoTitle    String?
-  seoDesc     String?    @map("seo_description") @postgresql.Text
+  seoDesc     String?    @map("seo_description") @db.Text
   seoKeywords String[]
   
   @@map("posts")
@@ -163,7 +185,7 @@ model Category {
   id          String   @id @default(cuid())
   name        String   @unique
   slug        String   @unique
-  description String?  @postgresql.Text
+  description String?  @db.Text
   postCount   Int      @default(0) @map("post_count")
   posts       Post[]   @relation("PostCategories")
   parentId    String?
@@ -178,7 +200,7 @@ model Tag {
   id          String   @id @default(cuid())
   name        String   @unique
   slug        String   @unique
-  description String?  @postgresql.Text
+  description String?  @db.Text
   postCount   Int      @default(0) @map("post_count")
   posts       Post[]   @relation("PostTags")
   
@@ -195,7 +217,7 @@ model Media {
   width       Int?
   height      Int?
   altText     String?
-  description String?   @postgresql.Text
+  description String?   @db.Text
   post        Post?     @relation(fields: [postId], references: [id])
   postId      String?
   user        User      @relation(fields: [userId], references: [id])
@@ -207,7 +229,7 @@ model Media {
 // Comment model for post comments
 model Comment {
   id        String        @id @default(cuid())
-  content   String        @postgresql.Text
+  content   String        @db.Text
   status    CommentStatus @default(PENDING)
   author    User?         @relation(fields: [authorId], references: [id])
   authorId  String?
@@ -226,7 +248,7 @@ model Comment {
 model Setting {
   id         String   @id @default(cuid())
   key        String   @unique
-  value      String   @postgresql.Text
+  value      String   @db.Text
   type       String   // string, number, boolean, json
   group      String?
   label      String

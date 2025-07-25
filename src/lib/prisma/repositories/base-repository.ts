@@ -1,119 +1,144 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 
-export type PaginationOptions = {
-  page: number;
-  pageSize: number;
-  orderBy?: any;
+type PrismaModelName = keyof typeof Prisma.ModelName;
+
+type PrismaModel = {
+  findMany: <T = unknown>(args?: unknown) => Promise<T[]>;
+  findUnique: <T = unknown>(args: unknown) => Promise<T | null>;
+  create: <T = unknown>(args: unknown) => Promise<T>;
+  update: <T = unknown>(args: unknown) => Promise<T>;
+  delete: <T = unknown>(args: unknown) => Promise<T>;
+  count: (args?: unknown) => Promise<number>;
+  deleteMany: (args?: unknown) => Promise<{ count: number }>;
 };
 
-export interface PaginatedResult<T> {
+// Type for pagination options
+interface PaginationOptions {
+  page?: number;
+  pageSize?: number;
+  where?: unknown;
+  orderBy?: unknown;
+  include?: unknown;
+  select?: unknown;
+}
+
+// Type for paginated results
+interface PaginatedResult<T> {
   data: T[];
   meta: {
     total: number;
     page: number;
     pageSize: number;
     totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
   };
 }
 
-// Extend the PrismaClient type to include the transaction client
-type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>;
+type PrismaClientWithModels = {
+  [K in Uncapitalize<keyof typeof Prisma.ModelName>]: PrismaModel;
+};
 
-export abstract class BaseRepository<T, CreateInput, UpdateInput, WhereUniqueInput, WhereInput, OrderByInput> {
+export abstract class BaseRepository<ModelName extends PrismaModelName> {
   constructor(protected readonly prisma: PrismaClient) {}
 
-  // Transaction support
-  async withTransaction<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(fn);
-  }
+  // Abstract property that must be implemented by child classes
+  protected abstract get modelName(): ModelName;
 
-  // CRUD Operations
-  abstract create(data: CreateInput, transaction?: TransactionClient): Promise<T>;
-  
-  abstract findMany(args?: {
-    where?: WhereInput;
-    skip?: number;
-    take?: number;
-    orderBy?: OrderByInput | OrderByInput[];
-    include?: any;
-    transaction?: TransactionClient;
-  }): Promise<T[]>;
-
-  abstract findUnique(
-    where: WhereUniqueInput, 
-    options?: {
-      include?: any;
-      transaction?: TransactionClient;
+  protected get model(): PrismaModel {
+    const modelName = this.modelName;
+    if (!modelName) {
+      throw new Error(
+        'Model name is not defined. Make sure to implement the modelName getter in the child class.'
+      );
     }
-  ): Promise<T | null>;
+    const modelKey = (modelName[0].toLowerCase() + modelName.slice(1)) as Uncapitalize<ModelName>;
+    const prismaWithModels = this.prisma as unknown as PrismaClientWithModels;
+    const model = prismaWithModels[modelKey] as PrismaModel | undefined;
 
-  abstract update(params: {
-    where: WhereUniqueInput;
-    data: UpdateInput;
-    include?: any;
-    transaction?: TransactionClient;
-  }): Promise<T>;
-
-  abstract delete(where: WhereUniqueInput, transaction?: TransactionClient): Promise<T>;
-  
-  // Hard delete implementation (directly deletes the record)
-  async hardDelete(where: WhereUniqueInput, transaction?: TransactionClient): Promise<T> {
-    const prisma = transaction || this.prisma;
-    return (prisma as any)[this.getModelName()].delete({ where });
-  }
-
-  // Soft delete implementation
-  async softDelete(where: WhereUniqueInput, transaction?: TransactionClient): Promise<T> {
-    const prisma = transaction || this.prisma;
-    return (prisma as any)[this.getModelName()].update({
-      where,
-      data: { deletedAt: new Date() },
-    });
-  }
-
-  // Count with filters
-  async count(where?: WhereInput, transaction?: Prisma.TransactionClient): Promise<number> {
-    const prisma = transaction || this.prisma;
-    return (prisma as any)[this.getModelName()].count({ where });
-  }
-
-  // Pagination helper
-  async paginate(
-    options: PaginationOptions & {
-      where?: WhereInput;
-      include?: any;
-      transaction?: Prisma.TransactionClient;
+    if (!model) {
+      throw new Error(`Model '${modelKey}' not found in Prisma Client`);
     }
-  ): Promise<PaginatedResult<T>> {
-    const { page = 1, pageSize = 10, where, include, orderBy } = options;
-    const prisma = options.transaction || this.prisma;
+
+    return model;
+  }
+
+  async findMany<T = unknown>(args?: unknown): Promise<T[]> {
+    return this.model.findMany<T>(args);
+  }
+
+  async findUnique<T = unknown>(args: unknown): Promise<T | null> {
+    return this.model.findUnique<T>(args);
+  }
+
+  async create<T = unknown>(args: unknown): Promise<T> {
+    return this.model.create<T>(args);
+  }
+
+  async update<T = unknown>(args: unknown): Promise<T> {
+    return this.model.update<T>(args);
+  }
+
+  async delete<T = unknown>(args: unknown): Promise<T> {
+    return this.model.delete<T>(args);
+  }
+
+  async count(args?: unknown): Promise<number> {
+    return this.model.count(args);
+  }
+
+  async deleteMany(args?: unknown): Promise<{ count: number }> {
+    return this.model.deleteMany(args || {});
+  }
+
+  async paginate<T = unknown>({
+    page = 1,
+    pageSize = 10,
+    where,
+    orderBy,
+    include,
+    select,
+  }: PaginationOptions = {}): Promise<PaginatedResult<T>> {
     const skip = (page - 1) * pageSize;
-    const take = pageSize;
 
-    const [total, data] = await Promise.all([
-      this.count(where as WhereInput, prisma),
-      prisma[this.getModelName()].findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include,
-      }) as Promise<T[]>,
+    // Build the query parameters with proper typing
+    interface QueryParams {
+      skip: number;
+      take: number;
+      where?: unknown;
+      orderBy?: unknown;
+      include?: unknown;
+      select?: unknown;
+    }
+
+    const queryParams: QueryParams = { skip, take: pageSize };
+
+    // Only add defined parameters to the query
+    if (where) queryParams.where = where;
+    if (orderBy) queryParams.orderBy = orderBy;
+    if (include) queryParams.include = include;
+    if (select) queryParams.select = select;
+
+    // Execute queries in parallel
+    const [total, items] = await Promise.all([
+      where ? this.count({ where }) : this.count(),
+      this.findMany<T>(queryParams),
     ]);
 
+    const totalPages = Math.ceil(total / pageSize);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
     return {
-      data,
+      data: items,
       meta: {
         total,
         page,
         pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
       },
     };
   }
-
-  // Get model name from class name (e.g., 'UserRepository' -> 'user')
-  protected abstract getModelName(): string;
 }
-
-// Type helpers for Prisma models will be defined as needed
